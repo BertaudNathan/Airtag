@@ -56,7 +56,7 @@ public:
      * @brief Check if connected to broker
      * @return true if connected
      */
-    bool isConnected() const;
+    bool isConnected();
     
 private:
     DeviceConfig mConfig;

@@ -1,4 +1,5 @@
 #include "services/WiFiService.h"
+#include "utils/Logger.h"
 
 static const uint32_t WIFI_TIMEOUT = 10000;  // 10 second timeout
 
@@ -8,20 +9,65 @@ WiFiService::WiFiService(const DeviceConfig& config)
 }
 
 bool WiFiService::connect() {
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(mConfig.wifiSSID, mConfig.wifiPassword);
+    char logMsg[128];
     
+    // Disconnect any previous connection
+    WiFi.disconnect(true);
+    delay(500);
+    
+    // Set WiFi mode and hostname
+    WiFi.mode(WIFI_STA);
+    WiFi.setHostname(mConfig.deviceID);
+    
+    snprintf(logMsg, sizeof(logMsg), "Connecting to: %s", mConfig.wifiSSID);
+    Logger::info(logMsg);
+    
+    // Begin connection
+    WiFi.begin(mConfig.wifiSSID, mConfig.wifiPassword);
     mLastConnectAttempt = millis();
     
-    // Wait for connection with timeout
+    // Wait for connection with detailed status logging
     unsigned long startTime = millis();
+    int lastStatus = -1;
+    
     while (WiFi.status() != WL_CONNECTED) {
         if (millis() - startTime > WIFI_TIMEOUT) {
+            int finalStatus = WiFi.status();
+            const char* statusText = "UNKNOWN";
+            switch(finalStatus) {
+                case WL_IDLE_STATUS: statusText = "IDLE"; break;
+                case WL_NO_SSID_AVAIL: statusText = "NO_SSID_AVAIL"; break;
+                case WL_SCAN_COMPLETED: statusText = "SCAN_COMPLETED"; break;
+                case WL_CONNECTED: statusText = "CONNECTED"; break;
+                case WL_CONNECT_FAILED: statusText = "CONNECT_FAILED"; break;
+                case WL_CONNECTION_LOST: statusText = "CONNECTION_LOST"; break;
+                case WL_DISCONNECTED: statusText = "DISCONNECTED"; break;
+            }
+            snprintf(logMsg, sizeof(logMsg), "WiFi timeout! Status: %d (%s)", finalStatus, statusText);
+            Logger::error(logMsg);
             return false;
         }
-        delay(100);
+        
+        int currentStatus = WiFi.status();
+        if (currentStatus != lastStatus) {
+            const char* statusText = "UNKNOWN";
+            switch(currentStatus) {
+                case WL_IDLE_STATUS: statusText = "IDLE"; break;
+                case WL_NO_SSID_AVAIL: statusText = "NO_SSID_AVAIL"; break;
+                case WL_SCAN_COMPLETED: statusText = "SCAN_COMPLETED"; break;
+                case WL_CONNECT_FAILED: statusText = "CONNECT_FAILED"; break;
+                case WL_CONNECTION_LOST: statusText = "CONNECTION_LOST"; break;
+                case WL_DISCONNECTED: statusText = "DISCONNECTED"; break;
+            }
+            snprintf(logMsg, sizeof(logMsg), "Status: %d (%s)", currentStatus, statusText);
+            Logger::debug(logMsg);
+            lastStatus = currentStatus;
+        }
+        
+        delay(500);
     }
     
+    Logger::info("WiFi connected!");
     return true;
 }
 

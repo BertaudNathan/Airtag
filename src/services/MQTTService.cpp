@@ -1,4 +1,6 @@
 #include "services/MQTTService.h"
+#include "utils/Logger.h"
+#include <WiFi.h>
 
 static const uint32_t MQTT_TIMEOUT = 5000;  // 5 second timeout
 
@@ -12,7 +14,16 @@ MQTTService::MQTTService(const DeviceConfig& config)
     , mCallback(nullptr)
     , mLastConnectAttempt(0) {
     
-    mMQTTClient.setServer(mConfig.mqttBrokerIP, mConfig.mqttPort);
+    // Parse IP address from string
+    IPAddress brokerIP;
+    if (brokerIP.fromString(mConfig.mqttBrokerIP)) {
+        mMQTTClient.setServer(brokerIP, mConfig.mqttPort);
+        Logger::debug("MQTT server configured:");
+        Logger::debug(mConfig.mqttBrokerIP);
+    } else {
+        Logger::error("Failed to parse MQTT broker IP");
+    }
+    
     mMQTTClient.setCallback(messageCallback);
     sInstance = this;
 }
@@ -79,12 +90,35 @@ bool MQTTService::maintainConnection(ConnectionStatus& status) {
     return reconnected;
 }
 
-bool MQTTService::isConnected() const {
+bool MQTTService::isConnected() {
     return mMQTTClient.connected();
 }
 
 bool MQTTService::attemptConnection() {
-    return mMQTTClient.connect(mConfig.deviceID);
+    // Check WiFi connection first
+    if (WiFi.status() != WL_CONNECTED) {
+        Logger::error("Cannot connect to MQTT: WiFi not connected");
+        return false;
+    }
+    
+    Logger::debug("Attempting MQTT connection...");
+    
+    char logMsg[128];
+    snprintf(logMsg, sizeof(logMsg), "Broker: %s:%d, Client ID: %s", 
+             mConfig.mqttBrokerIP, mConfig.mqttPort, mConfig.deviceID);
+    Logger::debug(logMsg);
+    
+    bool connected = mMQTTClient.connect(mConfig.deviceID);
+    
+    if (!connected) {
+        int state = mMQTTClient.state();
+        snprintf(logMsg, sizeof(logMsg), "MQTT failed, state: %d", state);
+        Logger::error(logMsg);
+    } else {
+        Logger::info("MQTT connection successful!");
+    }
+    
+    return connected;
 }
 
 void MQTTService::messageCallback(char* topic, byte* payload, unsigned int length) {

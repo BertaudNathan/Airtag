@@ -17,9 +17,9 @@
 // Configuration - Update these values for your network
 DeviceConfig config;
 void setupConfiguration() {
-    strcpy(config.wifiSSID, "YOUR_WIFI_SSID");
-    strcpy(config.wifiPassword, "YOUR_WIFI_PASSWORD");
-    strcpy(config.mqttBrokerIP, "192.168.1.100");  // Raspberry Pi IP
+    strcpy(config.wifiSSID, "SamsungA52s");
+    strcpy(config.wifiPassword, "nathanleboss");
+    strcpy(config.mqttBrokerIP, "192.168.54.45");  // Raspberry Pi IP
     config.mqttPort = 1883;
     strcpy(config.deviceID, "airtag_receiver_01");
     strcpy(config.mqttTopic, "airtag/motion");
@@ -110,10 +110,10 @@ void setup() {
 void loop() {
     // Maintain network connections
     wifiService->maintainConnection(connStatus);
-    
+    static bool wasConnected = false;
     if (mqttService->maintainConnection(connStatus)) {
         // Resubscribe if we just reconnected
-        static bool wasConnected = false;
+        
         if (!wasConnected) {
             mqttService->subscribe(onMotionDetected);
             Logger::info("Resubscribed after reconnection");
