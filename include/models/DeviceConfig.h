@@ -16,9 +16,11 @@ struct DeviceConfig {
     uint16_t mqttPort;              // MQTT broker port (default 1883)
     char deviceID[32];              // Unique device identifier
     char mqttTopic[64];             // MQTT topic for pub/sub
+    char mqttHardwareTopic[64];       // MQTT topic for hardware status (optional)
     float sensitivityThreshold;     // Motion threshold in G-force
     uint32_t alertDuration;         // Alert duration in milliseconds
     uint32_t debounceWindow;        // Debounce time window in ms
+
     
     /**
      * @brief Default constructor with sensible defaults

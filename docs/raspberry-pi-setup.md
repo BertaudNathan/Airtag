@@ -4,7 +4,7 @@ This guide explains how to set up a Raspberry Pi as an MQTT broker for the AirTa
 
 ## Prerequisites
 
-- Raspberry Pi 4 (or Pi 3 B+) with Raspberry Pi OS installed
+- Raspberry Pi 5 or Pi 4 (or Pi 3 B+) with Raspberry Pi OS installed
 - Network connection (WiFi or Ethernet)
 - SSH access or direct keyboard/monitor connection
 - Same WiFi network as ESP32 devices

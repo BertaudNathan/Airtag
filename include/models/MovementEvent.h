@@ -2,6 +2,7 @@
 #define MOVEMENT_EVENT_H
 
 #include <Arduino.h>
+#include "interfaces/IEvent.h"
 
 /**
  * @brief Represents a detected motion event
@@ -9,7 +10,7 @@
  * This struct contains all data associated with a single motion detection
  * event, including device identification, timing, and acceleration magnitude.
  */
-struct MovementEvent {
+struct MovementEvent : IEvent {
     enum EventType {
         MOTION_START,      // Initial motion detected
         MOTION_CONTINUE,   // Ongoing motion
@@ -37,14 +38,7 @@ struct MovementEvent {
      * @param bufferSize Size of output buffer
      * @return true if serialization successful
      */
-    bool toJSON(char* buffer, size_t bufferSize) const;
     
-    /**
-     * @brief Deserialize event from JSON string
-     * @param jsonStr Input JSON string
-     * @return true if deserialization successful
-     */
-    bool fromJSON(const char* jsonStr);
 };
 
 #endif // MOVEMENT_EVENT_H

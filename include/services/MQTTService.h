@@ -4,8 +4,13 @@
 #include <PubSubClient.h>
 #include <WiFiClient.h>
 #include "models/DeviceConfig.h"
+#include "models/HardwareEvent.h"
 #include "models/MovementEvent.h"
 #include "models/ConnectionStatus.h"
+#include "interfaces/IEvent.h"
+#include <map>
+#include <string>
+#include <typeindex>
 
 /**
  * @brief Manages MQTT pub/sub operations
@@ -31,14 +36,14 @@ public:
      * @param event Event to publish
      * @return true if publish successful
      */
-    bool publish(const MovementEvent& event);
+    bool publish(const IEvent& event);
     
     /**
      * @brief Subscribe to configured topic with callback
      * @param callback Function to call when message received
      * @return true if subscription successful
      */
-    bool subscribe(void (*callback)(const MovementEvent&));
+    bool subscribe(void (*callback)(const IEvent&));
     
     /**
      * @brief Process MQTT events (call in loop)
@@ -62,8 +67,12 @@ private:
     DeviceConfig mConfig;
     WiFiClient mWiFiClient;
     PubSubClient mMQTTClient;
-    void (*mCallback)(const MovementEvent&);
+    void (*mCallback)(const IEvent&);
     unsigned long mLastConnectAttempt;
+    std::map<std::type_index, std::string> dictEventTopic = {
+        {typeid(MovementEvent), mConfig.mqttTopic},
+        {typeid(HardwareEvent), mConfig.mqttHardwareTopic}
+    };
     
     bool attemptConnection();
     static void messageCallback(char* topic, byte* payload, unsigned int length);

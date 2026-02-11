@@ -7,6 +7,7 @@ static const uint32_t MQTT_TIMEOUT = 5000;  // 5 second timeout
 // Static instance for callback routing
 MQTTService* MQTTService::sInstance = nullptr;
 
+
 MQTTService::MQTTService(const DeviceConfig& config)
     : mConfig(config)
     , mWiFiClient()
@@ -35,7 +36,7 @@ bool MQTTService::connect() {
     return connected;
 }
 
-bool MQTTService::publish(const MovementEvent& event) {
+bool MQTTService::publish(const IEvent& event) {
     if (!mMQTTClient.connected()) {
         return false;
     }
@@ -45,10 +46,10 @@ bool MQTTService::publish(const MovementEvent& event) {
         return false;
     }
     
-    return mMQTTClient.publish(mConfig.mqttTopic, jsonBuffer);
+    return mMQTTClient.publish(dictEventTopic.count(typeid(event)) ? dictEventTopic[typeid(event)].c_str() : "", jsonBuffer);
 }
 
-bool MQTTService::subscribe(void (*callback)(const MovementEvent&)) {
+bool MQTTService::subscribe(void (*callback)(const IEvent&)) {
     if (!mMQTTClient.connected()) {
         return false;
     }

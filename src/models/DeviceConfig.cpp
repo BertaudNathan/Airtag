@@ -5,12 +5,14 @@ DeviceConfig::DeviceConfig()
     : mqttPort(1883)
     , sensitivityThreshold(0.5f)
     , alertDuration(5000)
-    , debounceWindow(1000) {
+    , debounceWindow(1000)
+    {
     memset(wifiSSID, 0, sizeof(wifiSSID));
     memset(wifiPassword, 0, sizeof(wifiPassword));
     memset(mqttBrokerIP, 0, sizeof(mqttBrokerIP));
     memset(deviceID, 0, sizeof(deviceID));
     memset(mqttTopic, 0, sizeof(mqttTopic));
+    memset(mqttHardwareTopic, 0, sizeof(mqttHardwareTopic));
 }
 
 bool DeviceConfig::isValid() const {

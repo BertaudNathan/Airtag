@@ -1,95 +1,99 @@
-# MQTT AirTag Tracking System
+# Système de détection de mouvement avec ESP32 et MQTT
 
-An ESP32-based IoT motion tracking system using MQTT for communication. When the transmitter device detects movement via accelerometer, it alerts receiver devices through LED and buzzer notifications.
+## Introduction
+Ce projet implémente un système de détection de mouvement utilisant des microcontrôleurs ESP32 et le protocole MQTT pour la communication. Un ESP32 agit comme émetteur, détectant les mouvements à l'aide d'un accéléromètre MPU6050 et publiant des alertes sur un broker MQTT hébergé sur un Raspberry Pi. Un second ESP32 agit comme récepteur, s'abonnant aux alertes MQTT et activant des notifications LED et buzzer en cas de mouvement détecté.
 
-## System Architecture
+## Architecture
 
-### Components
+### Composants
 
-1. **Transmitter ESP32**: Detects motion using MPU6050 accelerometer and publishes alerts via MQTT
-2. **Receiver ESP32**: Subscribes to MQTT alerts and activates LED + buzzer notifications
-3. **Raspberry Pi**: Hosts Mosquitto MQTT broker for message routing
+1. **ESP32 Émetteur** : Détecte le mouvement à l'aide de l'accéléromètre MPU6050 et publie des alertes via MQTT
+2. **ESP32 Récepteur** : S'abonne aux alertes MQTT et active les notifications LED + buzzer
+3. **Raspberry Pi** : Héberge le broker MQTT Mosquitto pour le routage des messages
 
-All devices connect to the same WiFi network.
+Tous les appareils se connectent au même réseau WiFi.
 
-### Features
+### Fonctionnalités
 
-- ✅ Real-time motion detection with configurable sensitivity
-- ✅ MQTT-based publish/subscribe architecture
-- ✅ Automatic WiFi and MQTT reconnection with exponential backoff
-- ✅ Audio-visual alerts (LED + buzzer)
-- ✅ Debouncing to prevent false positives
-- ✅ Constitution-compliant code (clean architecture, TDD-ready, ≤30 lines/function)
+- Détection de mouvement en temps réel avec sensibilité configurable
+- Architecture publish/subscribe basée sur MQTT
+- Reconnexion automatique WiFi et MQTT avec backoff exponentiel
+- Alertes audio-visuelles (LED + buzzer)
+- Anti-rebond pour éviter les faux positifs
+- Indicateurs de statut LED pour la connectivité et les alertes
+- Envoie de données de mouvement détaillées (magnitude, timestamp) dans les messages MQTT
+- Envoie de données hardware (température, batterie, utilisation CPU et RAM) pour diagnostic
 
-## Project Structure
+
+## Structure du projet
 
 ```
-include/          # Header files (.h)
-├── drivers/      # Hardware abstraction (MPU6050, LED, Buzzer)
-├── models/       # Data structures (MovementEvent, DeviceConfig, etc.)
-├── services/     # Business logic (Accelerometer, MQTT, WiFi, Alert)
-└── utils/        # Utilities (Logger)
+include/          # Fichiers d'en-tête (.h)
+├── drivers/      # Abstraction matérielle (MPU6050, LED, Buzzer)
+├── models/       # Structures de données (MovementEvent, DeviceConfig, etc.)
+├── services/     # Logique métier (Accéléromètre, MQTT, WiFi, Alert)
+└── utils/        # Utilitaires (Logger)
 
-src/              # Implementation files (.cpp)
+src/              # Fichiers d'implémentation (.cpp)
 ├── drivers/
 ├── models/
 ├── services/
 ├── utils/
-├── main_transmitter.cpp    # Transmitter firmware
-└── main_receiver.cpp       # Receiver firmware
+├── main_transmitter.cpp    # Firmware émetteur
+└── main_receiver.cpp       # Firmware récepteur
 
 docs/
-└── raspberry-pi-setup.md   # MQTT broker setup guide
+└── raspberry-pi-setup.md   # Guide d'installation du broker MQTT
 
 specs/001-mqtt-airtag/
-├── spec.md                 # Feature specification
-├── plan.md                 # Implementation plan
+├── spec.md                 # Spécification de la fonctionnalité
+├── plan.md                 # Plan d'implémentation
 └── checklists/
-    └── requirements.md     # Quality validation
+    └── requirements.md     # Validation qualité
 ```
 
-## Hardware Requirements
+## Prérequis matériels
 
-### Transmitter
+### Émetteur
 
-- ESP32 Development Board
-- MPU6050 Accelerometer (I2C)
-- Status LED (or use built-in LED on GPIO 2)
-- USB power supply or battery
+- ESP32
+- Accéléromètre MPU6050  (I2C)
+- LED de statut (ou utiliser la LED intégrée sur GPIO 2)
+- Alimentation USB ou batterie
 
-**Wiring:**
+**Câblage :**
 - MPU6050 SDA → ESP32 GPIO 21
 - MPU6050 SCL → ESP32 GPIO 22
 - MPU6050 VCC → 3.3V
 - MPU6050 GND → GND
 
-### Receiver
+### Récepteur
 
-- ESP32 Development Board
-- Status LED (GPIO 2)
-- Alert LED (GPIO 4)
-- Passive buzzer (GPIO 5)
-- USB power supply
+- ESP32
+- LED de statut (GPIO 2)
+- LED d'alerte (GPIO 4)
+- Buzzer passif (GPIO 5)
+- Alimentation USB ou batterie
 
-**Wiring:**
-- Alert LED (+) → ESP32 GPIO 4 → Resistor (220Ω) → GND
+**Câblage :**
+- LED d'alerte (+) → ESP32 GPIO 4 → Résistance (220Ω) → GND
 - Buzzer (+) → ESP32 GPIO 5
 - Buzzer (-) → GND
 
 ### Raspberry Pi Broker
 
-- Raspberry Pi 4 (or Pi 3 B+)
-- MicroSD card with Raspberry Pi OS
-- Power supply
-- Network connection (WiFi or Ethernet)
+- Raspberry Pi 5 or Pi 4 (or Pi 3 B+)
+- Carte MicroSD avec Raspberry Pi OS
+- Alimentation
+- Connexion réseau (WiFi ou Ethernet)
 
-## Quick Start
+## Démarrage rapide
 
-### 1. Setup Raspberry Pi MQTT Broker
+### 1. Configuration du broker MQTT sur Raspberry Pi
 
-Follow the detailed guide: [docs/raspberry-pi-setup.md](docs/raspberry-pi-setup.md)
+Suivez le guide détaillé : [docs/raspberry-pi-setup.md](docs/raspberry-pi-setup.md)
 
-Quick commands:
+Commandes rapides :
 ```bash
 sudo apt install -y mosquitto mosquitto-clients
 sudo systemctl enable mosquitto
@@ -98,247 +102,126 @@ echo "allow_anonymous true" | sudo tee -a /etc/mosquitto/mosquitto.conf
 sudo systemctl restart mosquitto
 ```
 
-Get Raspberry Pi IP:
+Obtenez l'adresse IP du Raspberry Pi :
 ```bash
 hostname -I
 ```
 
-### 2. Configure ESP32 Devices
+### 2. Configuration des appareils ESP32
 
-Edit both `src/main_transmitter.cpp` and `src/main_receiver.cpp`:
+Editer `src/main_transmitter.cpp` et `src/main_receiver.cpp`:
 
 ```cpp
 void setupConfiguration() {
-    strcpy(config.wifiSSID, "YOUR_WIFI_SSID");        // Your WiFi network name
-    strcpy(config.wifiPassword, "YOUR_WIFI_PASSWORD"); // Your WiFi password
-    strcpy(config.mqttBrokerIP, "192.168.1.100");     // Your Raspberry Pi IP
-    // ... rest remains the same
+    strcpy(config.wifiSSID, "YOUR_WIFI_SSID");        // Votre SSID WiFi
+    strcpy(config.wifiPassword, "YOUR_WIFI_PASSWORD"); // Votre mot de passe WiFi
+    strcpy(config.mqttBrokerIP, "192.168.1.100");     // Adresse IP du Raspberry Pi (broker MQTT)
+    // ... 
 }
 ```
 
-### 3. Build and Upload Firmware
+### 3. Compilation et téléversement
 
-**Install PlatformIO CLI** (if not installed):
+**Installer PlatformIO CLI** (si non installé):
 ```bash
 pip install platformio
 ```
 
-**Build Transmitter:**
+**Compiler Émetteur:**
 ```bash
 pio run -e transmitter
 pio run -e transmitter -t upload
 ```
 
-**Build Receiver:**
+**Compiler Récepteur:**
 ```bash
 pio run -e receiver
 pio run -e receiver -t upload
 ```
 
-### 4. Monitor Serial Output
+### 4. Sortie série pour le débogage
 
-**Transmitter:**
+**Émetteur:**
 ```bash
 pio device monitor -e transmitter
 ```
 
-**Receiver:**
+**Récepteur:**
 ```bash
 pio device monitor -e receiver
 ```
 
-### 5. Test the System
+### 5. >Test de bout en bout
 
-1. Power on Raspberry Pi and verify Mosquitto is running
-2. Upload transmitter firmware to first ESP32
-3. Upload receiver firmware to second ESP32
-4. Move the transmitter device - receiver should alert!
+1. Allumez le Raspberry Pi et vérifiez que Mosquitto fonctionne
+2. Téléversez le firmware de l'émetteur sur le premier ESP32
+3. Téléversez le firmware du récepteur sur le second ESP32
+4. Déplacez l'appareil émetteur - le récepteur devrait alerter !
 
-## Configuration Options
+## Options de configuration
 
-### Motion Sensitivity
+### Sensibilité au mouvement
 
-In `setupConfiguration()`:
+Dans `setupConfiguration()`:
 ```cpp
-config.sensitivityThreshold = 0.5f;  // G-force threshold (default: 0.5G)
+config.sensitivityThreshold = 2.0f;  // Seuil en G (par défaut : 2G)
 ```
 
-Lower values = more sensitive to gentle movements  
-Higher values = only detect stronger movements
+Augmenter pour moins de fausses alertes, diminuer pour plus de sensibilité.
 
-### Alert Duration
-
-```cpp
-config.alertDuration = 5000;  // Duration in milliseconds (default: 5 seconds)
-```
-
-### Debounce Window
+### Durée de l'alerte
 
 ```cpp
-config.debounceWindow = 1000;  // Milliseconds (default: 1 second)
+config.alertDuration = 5000;  // Durée en millisecondes (par défaut : 5 secondes)
 ```
 
-Prevents rapid repeated alerts during continuous motion.
-
-### MQTT Topic
+### Intervalle de rebond
 
 ```cpp
-strcpy(config.mqttTopic, "airtag/motion");  // Change to your preferred topic
+config.debounceWindow = 1000;  // Millisecondes (par défaut : 1 seconde)
 ```
 
-## LED Status Indicators
+Évite les alertes répétées rapides lors d'un mouvement continu.
 
-### Transmitter
+### Channel MQTT
 
-- **Off**: Fully connected and idle
-- **Slow blink**: WiFi/MQTT connection issue (retrying)
-- **Quick flash**: Motion detected and published
+```cpp
+strcpy(config.mqttTopic, "airtag/motion");  // Topic MQTT pour les alertes de mouvement
+```
 
-### Receiver
+## Indicateurs LED de statut
 
-- **Off**: Fully connected and listening
-- **Slow blink**: WiFi/MQTT connection issue (retrying)
-- **Fast blink + buzzer**: Motion alert active
+### Émetteur
 
-## Monitoring
+- **Éteint** : Entièrement connecté et inactif
+- **Clignotement lent** : Problème de connexion WiFi/MQTT (nouvelle tentative)
+- **Flash rapide** : Mouvement détecté et publié
 
-### Monitor MQTT Traffic
+### Récepteur
 
-On Raspberry Pi:
+- **Éteint** : Entièrement connecté et à l'écoute
+- **Clignotement lent** : Problème de connexion WiFi/MQTT (nouvelle tentative)
+- **Clignotement rapide + buzzer** : Alerte de mouvement active
+
+## Surveillance
+
+### Surveillance du trafic MQTT
+
+Sur Raspberry Pi:
 ```bash
-# View all messages
+# Voir tous les messages
 mosquitto_sub -h localhost -t '#' -v
 
-# View only motion events
+# Voir uniquement les événements de mouvement
 mosquitto_sub -h localhost -t 'airtag/motion' -v
 ```
 
-### Test MQTT Manually
+### Test MQTT manuellement
 
-Publish test event:
+Publier un événement de test :
 ```bash
 mosquitto_pub -h localhost -t 'airtag/motion' -m '{"deviceID":"test","timestamp":1000,"magnitude":1.5,"type":"start"}'
 ```
 
-Receiver should trigger alert.
+Le récepteur devrait déclencher une alerte.
 
-## Troubleshooting
-
-### ESP32 Can't Connect to WiFi
-
-- Verify SSID/password are correct
-- Check WiFi signal strength (need -75 dBm or better)
-- Ensure 2.4GHz WiFi (ESP32 doesn't support 5GHz)
-- Check Serial monitor for error messages
-
-### ESP32 Can't Connect to MQTT
-
-- Verify Raspberry Pi IP address
-- Ensure Mosquitto is running: `sudo systemctl status mosquitto`
-- Check firewall: `sudo ufw allow 1883/tcp`
-- Verify ESP32 and Pi are on same network
-- Test with: `mosquitto_sub -h <PI_IP> -t test`
-
-### Accelerometer Not Detected
-
-- Check I2C wiring (SDA/SCL, VCC/GND)
-- Verify MPU6050 address (default 0x68)
-- Test with I2C scanner sketch
-- Check Serial monitor for "Failed to initialize accelerometer"
-
-### No Motion Detection
-
-- Increase sensitivity: lower `sensitivityThreshold` value
-- Check Serial monitor for accelerometer readings
-- Verify MPU6050 is securely mounted (not loose)
-
-### Receiver Not Alerting
-
-- Verify receiver subscribed successfully (check Serial)
-- Test with manual MQTT publish (see above)
-- Check LED/buzzer wiring
-- Monitor MQTT broker to see if messages arrive
-
-## Development
-
-### Constitution Compliance
-
-This project follows strict code quality principles:
-
-- ✅ Clean architecture (.h/.cpp separation)
-- ✅ Functions ≤30 lines and ≤5 nesting depth
-- ✅ Classes for stateful components, structs for data
-- ✅ Test-driven development ready (mocked interfaces)
-- ✅ RAII and const-correctness
-
-See [.specify/memory/constitution.md](.specify/memory/constitution.md) for details.
-
-### Testing
-
-Unit tests use mocked hardware interfaces:
-
-```cpp
-class MockMPU6050 : public IMPU6050Driver {
-    // Test implementation
-};
-```
-
-Run tests:
-```bash
-pio test
-```
-
-### Adding Features
-
-1. Review [specs/001-mqtt-airtag/spec.md](specs/001-mqtt-airtag/spec.md)
-2. Follow TDD: write tests first
-3. Implement feature following constitution
-4. Verify all functions meet complexity limits
-
-## Performance
-
-- **Motion-to-MQTT latency**: <500ms typical
-- **MQTT-to-alert latency**: <200ms typical
-- **WiFi reconnection**: ~5-30 seconds (exponential backoff)
-- **Memory usage**: ~50KB RAM (plenty of headroom)
-- **Sampling rate**: 20Hz (50ms interval)
-
-## Security Notes
-
-**⚠️ Current configuration is for development only:**
-
-- MQTT has no authentication (anonymous allowed)
-- WiFi credentials stored in code (plaintext)
-- No encryption (TLS) for MQTT
-
-**For production:**
-- Enable Mosquitto authentication
-- Use secrets management for credentials
-- Enable MQTT TLS/SSL
-- Implement device attestation
-
-## License
-
-This project is built for educational and personal use.
-
-## Contributing
-
-Follow the project constitution when contributing:
-- Write tests first (TDD)
-- Keep functions small (≤30 lines)
-- Separate headers (.h) and implementations (.cpp)
-- Document public APIs
-
-## Support
-
-For issues:
-1. Check Serial monitor logs
-2. Review troubleshooting section
-3. Check Mosquitto logs: `sudo tail -f /var/log/mosquitto/mosquitto.log`
-4. Verify network connectivity
-
-## Version
-
-**Current**: 1.0.0 (MVP - Motion Detection & Alert System)
-
-**Branch**: `001-mqtt-airtag`

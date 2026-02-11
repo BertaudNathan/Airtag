@@ -23,6 +23,7 @@ void setupConfiguration() {
     config.mqttPort = 1883;
     strcpy(config.deviceID, "airtag_receiver_01");
     strcpy(config.mqttTopic, "airtag/motion");
+    strcpy(config.mqttHardwareTopic, "airtag/hardware");
     config.alertDuration = 5000;  // 5 second alert
 }
 
@@ -36,9 +37,9 @@ MQTTService* mqttService = nullptr;
 ConnectionStatus connStatus;
 
 // MQTT callback function
-void onMotionDetected(const MovementEvent& event) {
+void onMotionDetected(const IEvent& baseEvent) {
     Logger::info("Motion event received!");
-    
+    const MovementEvent& event = static_cast<const MovementEvent&>(baseEvent);
     char buffer[128];
     snprintf(buffer, sizeof(buffer), "Device: %s, Magnitude: %.2f", 
              event.deviceID, event.accelerationMagnitude);
@@ -115,7 +116,7 @@ void loop() {
         // Resubscribe if we just reconnected
         
         if (!wasConnected) {
-            mqttService->subscribe(onMotionDetected);
+            mqttService->subscribe( onMotionDetected);
             Logger::info("Resubscribed after reconnection");
         }
         wasConnected = true;
