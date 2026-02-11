@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: airtag-postgres
+    environment:
+      POSTGRES_DB: airtag
+      POSTGRES_USER: airtag_user
+      POSTGRES_PASSWORD: airtag_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airtag_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  influxdb:
+    image: influxdb:2.7
+    container_name: airtag-influxdb
+    environment:
+      INFLUXDB_DB: airtag_metrics
+      INFLUXDB_ADMIN_USER: airtag
+      INFLUXDB_ADMIN_PASSWORD: airtag_pass
+    ports:
+      - "8086:8086"
+    volumes:
+      - influx_data:/var/lib/influxdb
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  influx_data:
+    driver: local

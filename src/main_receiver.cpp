@@ -20,7 +20,7 @@ DeviceConfig config;
 void setupConfiguration() {
     strcpy(config.wifiSSID, "SamsungA52s");
     strcpy(config.wifiPassword, "nathanleboss");
-    strcpy(config.mqttBrokerIP, "192.168.54.45");  // Raspberry Pi IP
+    strcpy(config.mqttBrokerIP, "192.168.54.82");  // Raspberry Pi IP
     config.mqttPort = 1883;
     strcpy(config.deviceID, "airtag_receiver_01");
     strcpy(config.mqttTopic, "airtag/motion");

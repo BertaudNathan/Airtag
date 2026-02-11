@@ -24,11 +24,28 @@ Tous les appareils se connectent au même réseau WiFi.
 - Envoie de données de mouvement détaillées (magnitude, timestamp) dans les messages MQTT
 - Envoie de données hardware (température, batterie, utilisation CPU et RAM) pour diagnostic
 
+## Schémas 
+
+### Schémas électriques
+![Schéma de câblage emetteur](docs/images/wiring_diagram1.png)
+![Schéma de câblage recepteur](docs/images/wiring_diagram2.png)
+### Shémas des communications 
+![Schéma des communications ](docs/images/communication_diagram.png)
+
+## Données
+
+### Données de mouvement
+Le système émetteur vient capter un déplacement gràce à l'accéléromètre MPU6050. Lorsqu'un mouvement est détecté, un message MQTT est publié avec le timestamp, la magnitude du mouvement et le type d'événement (début ou fin de mouvement).
+Elles vont dans un second temps être envoyées vers un serveur distant puis stockées dans une base de données et pouvoir ensuite visualiser les mouvements sur une interface web.
+### Données hardware
+En plus des données de mouvement, les appareils ESP32 envoient périodiquement des données hardware telles que l'utilisation de la RAM, l'utilisation du CPU, le temps de fonctionnement et la mémoire libre. Ces données sont utiles pour surveiller la santé du système et diagnostiquer les problèmes potentiels.
+Elles vont dans un second temps être envoyées vers un serveur distant puis stockées dans une base de données pour détecter d'éventuelles anomalies sur le long terme (ex: surchauffe, fuite de mémoire, etc.)
 
 ## Structure du projet
 
 ```
-include/          # Fichiers d'en-tête (.h)
+include/  
+├── interfaces/    # Interfaces CPP ( squelette d'un event,...)
 ├── drivers/      # Abstraction matérielle (MPU6050, LED, Buzzer)
 ├── models/       # Structures de données (MovementEvent, DeviceConfig, etc.)
 ├── services/     # Logique métier (Accéléromètre, MQTT, WiFi, Alert)
