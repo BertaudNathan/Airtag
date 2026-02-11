@@ -38,7 +38,20 @@ struct MovementEvent : IEvent {
      * @param bufferSize Size of output buffer
      * @return true if serialization successful
      */
+    bool toJSON(char* buffer, size_t bufferSize) const override;
     
+    /**
+     * @brief Deserialize event from JSON string
+     * @param jsonStr Input JSON string
+     * @return true if deserialization successful
+     */
+    bool fromJSON(const char* jsonStr) override;
+    
+    /**
+     * @brief Get the event type identifier
+     * @return EventTypeID for this event
+     */
+    EventTypeID getEventTypeID() const override { return EventTypeID::MOVEMENT_EVENT; }
 };
 
 #endif // MOVEMENT_EVENT_H

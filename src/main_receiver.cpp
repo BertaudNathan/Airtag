@@ -8,6 +8,7 @@
 #include "services/WiFiService.h"
 #include "services/MQTTService.h"
 #include "utils/Logger.h"
+#include "services/HardwareService.h"
 
 // Pin definitions
 #define STATUS_LED_PIN 2
@@ -24,7 +25,7 @@ void setupConfiguration() {
     strcpy(config.deviceID, "airtag_receiver_01");
     strcpy(config.mqttTopic, "airtag/motion");
     strcpy(config.mqttHardwareTopic, "airtag/hardware");
-    config.alertDuration = 5000;  // 5 second alert
+    config.alertDuration = 500;  // 0.5 second alert
 }
 
 // Global objects
@@ -34,6 +35,7 @@ BuzzerDriver* buzzer = nullptr;
 AlertService* alertService = nullptr;
 WiFiService* wifiService = nullptr;
 MQTTService* mqttService = nullptr;
+HardwareService *hardwareService = nullptr;
 ConnectionStatus connStatus;
 
 // MQTT callback function
@@ -71,7 +73,8 @@ void setup() {
     
     alertService = new AlertService(alertLED, buzzer);
     
-    Logger::info("Hardware initialized");
+    hardwareService = new HardwareService();
+    Logger::info("Hardware service initialized");
     
     // Connect to WiFi
     wifiService = new WiFiService(config);
@@ -122,6 +125,14 @@ void loop() {
         wasConnected = true;
     } else {
         wasConnected = false;
+    }
+    
+    // Send hardware data every 8 ticks
+    static uint8_t tickCounter = 0;
+    if (++tickCounter >= 8) {
+        tickCounter = 0;
+        HardwareEvent hwEvent(config.deviceID, millis(), hardwareService->getRAMUsage(), hardwareService->getCPUUsage(), hardwareService->getUptime(), hardwareService->getFreeHeap());
+        mqttService->publish(hwEvent);
     }
     
     mqttService->loop();

@@ -10,7 +10,6 @@
 #include "interfaces/IEvent.h"
 #include <map>
 #include <string>
-#include <typeindex>
 
 /**
  * @brief Manages MQTT pub/sub operations
@@ -69,10 +68,7 @@ private:
     PubSubClient mMQTTClient;
     void (*mCallback)(const IEvent&);
     unsigned long mLastConnectAttempt;
-    std::map<std::type_index, std::string> dictEventTopic = {
-        {typeid(MovementEvent), mConfig.mqttTopic},
-        {typeid(HardwareEvent), mConfig.mqttHardwareTopic}
-    };
+    std::map<EventTypeID, std::string> dictEventTopic;
     
     bool attemptConnection();
     static void messageCallback(char* topic, byte* payload, unsigned int length);

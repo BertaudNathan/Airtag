@@ -167,10 +167,16 @@ void loop()
     // Maintain network connections
     wifiService->maintainConnection(connStatus);
     mqttService->maintainConnection(connStatus);
-    HardwareEvent hwEvent(config.deviceID, millis(), hardwareService->getRAMUsage(), hardwareService->getCPUUsage(), hardwareService->getUptime(), hardwareService->getFreeHeap());
-    mqttService->publish(hwEvent);
-    mqttService->loop();
 
+    // Send hardware data every 8 ticks
+    static uint8_t tickCounter = 0;
+    if (++tickCounter >= 8) {
+        tickCounter = 0;
+        HardwareEvent hwEvent(config.deviceID, millis(), hardwareService->getRAMUsage(), hardwareService->getCPUUsage(), hardwareService->getUptime(), hardwareService->getFreeHeap());
+        mqttService->publish(hwEvent);
+    }
+    
+    mqttService->loop();
     // Update status LED based on connectivity
     if (connStatus.mqttConnected && connStatus.wifiConnected)
     {

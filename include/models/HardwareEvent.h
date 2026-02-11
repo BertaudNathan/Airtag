@@ -2,6 +2,7 @@
 #define HARDWARE_EVENT_H
 #include <Arduino.h>
 #include "interfaces/IEvent.h"
+
 /**
  * @brief Represents a hardware status event
  * 
@@ -33,14 +34,20 @@ struct HardwareEvent : IEvent {
      * @param bufferSize Size of output buffer
      * @return true if serialization successful
      */
-    bool toJSON(char* buffer, size_t bufferSize) const;
+    bool toJSON(char* buffer, size_t bufferSize) const override;
     
     /**
      * @brief Deserialize event from JSON string
      * @param jsonStr Input JSON string
      * @return true if deserialization successful
      */
-    bool fromJSON(const char* jsonStr);
+    bool fromJSON(const char* jsonStr) override;
+    
+    /**
+     * @brief Get the event type identifier
+     * @return EventTypeID for this event
+     */
+    EventTypeID getEventTypeID() const override { return EventTypeID::HARDWARE_EVENT; }
 };
 
 #endif // HARDWARE_EVENT_H

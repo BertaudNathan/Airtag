@@ -15,6 +15,10 @@ MQTTService::MQTTService(const DeviceConfig& config)
     , mCallback(nullptr)
     , mLastConnectAttempt(0) {
     
+    // Initialize the event topic map
+    dictEventTopic[EventTypeID::MOVEMENT_EVENT] = mConfig.mqttTopic;
+    dictEventTopic[EventTypeID::HARDWARE_EVENT] = mConfig.mqttHardwareTopic;
+    
     // Parse IP address from string
     IPAddress brokerIP;
     if (brokerIP.fromString(mConfig.mqttBrokerIP)) {
@@ -46,7 +50,10 @@ bool MQTTService::publish(const IEvent& event) {
         return false;
     }
     
-    return mMQTTClient.publish(dictEventTopic.count(typeid(event)) ? dictEventTopic[typeid(event)].c_str() : "", jsonBuffer);
+    EventTypeID typeID = event.getEventTypeID();
+    const char* topic = dictEventTopic.count(typeID) ? dictEventTopic[typeID].c_str() : "";
+    
+    return mMQTTClient.publish(topic, jsonBuffer);
 }
 
 bool MQTTService::subscribe(void (*callback)(const IEvent&)) {
@@ -59,36 +66,33 @@ bool MQTTService::subscribe(void (*callback)(const IEvent&)) {
 }
 
 void MQTTService::loop() {
-    if (mMQTTClient.connected()) {
-        mMQTTClient.loop();
-    }
+    mMQTTClient.loop();
 }
 
 bool MQTTService::maintainConnection(ConnectionStatus& status) {
     if (mMQTTClient.connected()) {
-        status.updateMQTTStatus(true);
+        status.mqttConnected = true;
         return true;
     }
     
-    // Not connected - check if we should retry
-    unsigned long currentTime = millis();
-    if (currentTime - mLastConnectAttempt < status.nextRetryDelay) {
-        status.updateMQTTStatus(false);
+    status.mqttConnected = false;
+    
+    // Throttle reconnection attempts
+    if (millis() - mLastConnectAttempt < MQTT_TIMEOUT) {
         return false;
     }
     
-    // Attempt reconnection
-    mLastConnectAttempt = currentTime;
-    bool reconnected = attemptConnection();
-    
-    if (reconnected) {
-        status.updateMQTTStatus(true);
-    } else {
-        status.updateMQTTStatus(false);
-        status.recordFailedAttempt();
+    Logger::info("Attempting MQTT connection...");
+    if (attemptConnection()) {
+        Logger::info("MQTT connected");
+        status.mqttConnected = true;
+        //status.las = millis();
+        return true;
     }
     
-    return reconnected;
+    Logger::error("MQTT connection failed");
+    //status.lastMqttConnectAttempt = millis();
+    return false;
 }
 
 bool MQTTService::isConnected() {
@@ -96,30 +100,8 @@ bool MQTTService::isConnected() {
 }
 
 bool MQTTService::attemptConnection() {
-    // Check WiFi connection first
-    if (WiFi.status() != WL_CONNECTED) {
-        Logger::error("Cannot connect to MQTT: WiFi not connected");
-        return false;
-    }
-    
-    Logger::debug("Attempting MQTT connection...");
-    
-    char logMsg[128];
-    snprintf(logMsg, sizeof(logMsg), "Broker: %s:%d, Client ID: %s", 
-             mConfig.mqttBrokerIP, mConfig.mqttPort, mConfig.deviceID);
-    Logger::debug(logMsg);
-    
-    bool connected = mMQTTClient.connect(mConfig.deviceID);
-    
-    if (!connected) {
-        int state = mMQTTClient.state();
-        snprintf(logMsg, sizeof(logMsg), "MQTT failed, state: %d", state);
-        Logger::error(logMsg);
-    } else {
-        Logger::info("MQTT connection successful!");
-    }
-    
-    return connected;
+    mLastConnectAttempt = millis();
+    return mMQTTClient.connect(mConfig.deviceID);
 }
 
 void MQTTService::messageCallback(char* topic, byte* payload, unsigned int length) {
@@ -127,15 +109,20 @@ void MQTTService::messageCallback(char* topic, byte* payload, unsigned int lengt
         return;
     }
     
-    // Null-terminate payload
-    char buffer[256];
-    size_t copyLen = (length < sizeof(buffer) - 1) ? length : sizeof(buffer) - 1;
-    memcpy(buffer, payload, copyLen);
-    buffer[copyLen] = '\0';
+    // Create null-terminated string from payload
+    char message[256];
+    size_t len = (length < sizeof(message) - 1) ? length : sizeof(message) - 1;
+    memcpy(message, payload, len);
+    message[len] = '\0';
     
-    // Deserialize and invoke callback
+    Logger::debug("Received MQTT message");
+    Logger::debug(topic);
+    Logger::debug(message);
+    
+    // Parse the message based on topic
+    // For now, assuming movement events on the main topic
     MovementEvent event;
-    if (event.fromJSON(buffer)) {
+    if (event.fromJSON(message)) {
         sInstance->mCallback(event);
     }
 }
